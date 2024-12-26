@@ -4,7 +4,7 @@
   "description": "The Automatic Oral Exam Application, built with Node.js, simplifies oral exams by allowing instructors to create and manage exams. Students record and upload answers, which are processed using speech-to-text technology. The platform supports automatic and manual grading for efficient evaluation.",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon index.js"
   },
   "repository": {
     "type": "git",
@@ -19,10 +19,13 @@
   "homepage": "https://github.com/Mostafay65/Oral-Eaxm#readme",
   "dependencies": {
     "@google-cloud/speech": "^6.7.0",
+    "bcrypt": "^5.1.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.2",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "nodemon": "^3.1.9",
+    "validator": "^13.12.0"
   }
 }
