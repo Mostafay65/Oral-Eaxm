@@ -4,15 +4,19 @@ const Path = require("path");
 const connectDB = require("./config/db");
 const userRouter = require("./routes/users.route");
 const authRouter = require("./routes/auth.route");
+const questionRouter = require("./routes/question.route");
 const httpStatusText = require("./Utilities/httpStatusText");
+const { log } = require("console");
 connectDB();
 
 let app = express();
 app.use(express.json());
 
-app.use("/Uploads", express.static(Path.join(__dirname, "Uploads")));
+app.use("/uploads", express.static(Path.join(__dirname, "Uploads")));
+
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/question", questionRouter);
 
 app.all("*", async (req, res, next) => {
     res.status(404).json({
@@ -23,7 +27,7 @@ app.all("*", async (req, res, next) => {
 
 app.use((error, req, res, next) => {
     res.status(error.statusCode || 500).json({
-        status: error.statusText || httpStatusText.ERROR,
+        status: error.statusCodeText || httpStatusText.ERROR,
         message: error.message,
         data: null,
     });

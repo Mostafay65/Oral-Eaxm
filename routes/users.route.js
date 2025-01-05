@@ -5,6 +5,6 @@ const { roles } = require("../Utilities/roles");
 
 
 const router = express.Router();
-router.get("/", Authorize(roles.Student), userController.getAllUsers);
+router.get("/", Authorize(roles.Student, roles.Instructor), userController.getAllUsers);
 
 module.exports = router;
