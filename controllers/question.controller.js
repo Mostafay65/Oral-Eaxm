@@ -2,7 +2,8 @@ const Question = require("../models/question.model");
 const httpStatusText = require("../Utilities/httpStatusText");
 const asyncWrapper = require("../middleware/asyncWrapper");
 const appError = require("../Utilities/appError");
-
+const transcribe = require("../services/SpeechToText.service");
+const questionProcessingQueue = require("../services/questionProcessingQueue.service");
 const mapQuestion = (question) => {
     return {
         _id: question._id,
@@ -38,21 +39,22 @@ const getQuestionById = asyncWrapper(async (req, res, next) => {
 });
 
 const createQuestion = asyncWrapper(async (req, res, next) => {
-    const { question, answer } = req.body;
-    // console.log("Done ========> ", req.files);
-
-    // call your service here to get the question and answer text
-    const newQuestion = new Question({
-        questionText: question, //
-        questionFile: req.files.questionFile[0].filename,
-        answerText: answer, //
-        answerFile: req.files.answerFile[0].filename,
+    if (!req.files || !req.files.questionFile || !req.files.answerFile) {
+        return next(
+            new appError("Missing required files ", 400, httpStatusText.ERROR)
+        );
+    }
+    
+    await questionProcessingQueue.add({
+        questionFile: req.files.questionFile[0],
+        answerFile: req.files.answerFile[0],
     });
-
-    await newQuestion.save();
+    
+    
     return res.json({
         status: httpStatusText.SUCCESS,
-        data: mapQuestion(newQuestion),
+        mesage: "Your Question is put in the queue and is being processed........",
+        data: null,
     });
 });
 

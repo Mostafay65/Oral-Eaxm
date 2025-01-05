@@ -4,7 +4,6 @@ const multer = require("multer");
 const path = require("path");
 const appError = require("../Utilities/appError");
 const { randomBytes } = require("crypto");
-const { log } = require("console");
 const router = express.Router();
 
 const storage = multer.diskStorage({

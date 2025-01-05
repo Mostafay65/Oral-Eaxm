@@ -18,8 +18,9 @@
   },
   "homepage": "https://github.com/Mostafay65/Oral-Eaxm#readme",
   "dependencies": {
-    "@google-cloud/speech": "^6.7.0",
+    "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
+    "bull": "^4.16.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
