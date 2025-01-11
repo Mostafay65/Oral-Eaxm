@@ -1,26 +1,32 @@
 const mongoose = require("mongoose");
 const User = require("./user.model");
+const { roles } = require("../Utilities/roles");
 
 const Student = User.discriminator(
-    "STUDENT",
+    roles.Student,
     new mongoose.Schema({
         examsAnswer: [
             {
-                exam: { type: mongoose.Schema.Types.ObjectId, ref: "" },
-                questionsAnswer: {
-                    question:{ type: mongoose.Schema.Types.ObjectId, ref: "Question" },
-                    studentAnswerFile: { type: string, required: true },
-                    studentAnswerText: { type: string, required: true },
-                },
+                exam: { type: mongoose.Schema.Types.ObjectId, ref: "Exam" },
+                questionsAnswer: [
+                    {
+                        question: {
+                            type: mongoose.Schema.Types.ObjectId,
+                            ref: "Question",
+                        },
+                        studentAnswerFile: { type: String, required: true },
+                        studentAnswerText: { type: String, required: true },
+                    },
+                ],
             },
         ],
     })
 );
 
 const Instructor = User.discriminator(
-    "INSTRUCTOR",
+    roles.Instructor,
     new mongoose.Schema({
-        exams: [{ type: mongoose.Types.ObjectId, ref: "exams" }],
+        exams: [{ type: mongoose.Types.ObjectId, ref: "Exam" }],
     })
 );
 

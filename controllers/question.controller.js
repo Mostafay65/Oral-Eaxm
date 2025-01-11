@@ -2,27 +2,17 @@ const Question = require("../models/question.model");
 const httpStatusText = require("../Utilities/httpStatusText");
 const asyncWrapper = require("../middleware/asyncWrapper");
 const appError = require("../Utilities/appError");
-const transcribe = require("../services/SpeechToText.service");
 const questionProcessingQueue = require("../services/questionProcessingQueue.service");
-const mapQuestion = (question) => {
-    return {
-        _id: question._id,
-        questionFile:
-            process.env.HOST +
-            "/uploads/Exams/questions/" +
-            question.questionFile,
-        answerFile:
-            process.env.HOST + "/uploads/Exams/answers/" + question.answerFile,
-        questionText: question.questionText,
-        answerText: question.answerText,
-    };
-};
+const mongoose = require("mongoose");
+const questionMapper = require("../mappers/question.mapper");
+const fs = require("fs");
+const path = require("path");
 
 const getAllQuestions = asyncWrapper(async (req, res, next) => {
     const questions = await Question.find({}, { __v: 0 });
     return res.json({
         status: httpStatusText.SUCCESS,
-        data: questions.map(mapQuestion),
+        data: questions.map(questionMapper),
     });
 });
 
@@ -34,7 +24,7 @@ const getQuestionById = asyncWrapper(async (req, res, next) => {
         );
     return res.json({
         status: httpStatusText.SUCCESS,
-        data: mapQuestion(question),
+        data: questionMapper(question),
     });
 });
 
@@ -44,17 +34,19 @@ const createQuestion = asyncWrapper(async (req, res, next) => {
             new appError("Missing required files ", 400, httpStatusText.ERROR)
         );
     }
-    
+
+    const questionId = new mongoose.Types.ObjectId();
     await questionProcessingQueue.add({
+        questionId: questionId,
         questionFile: req.files.questionFile[0],
         answerFile: req.files.answerFile[0],
     });
-    
-    
+
     return res.json({
         status: httpStatusText.SUCCESS,
-        mesage: "Your Question is put in the queue and is being processed........",
-        data: null,
+        message:
+            "Your Question is put in the queue and is being processed........",
+        data: { questionId },
     });
 });
 
@@ -66,6 +58,25 @@ const deleteQuestion = asyncWrapper(async (req, res, next) => {
         return next(
             new appError("Question not found", 404, httpStatusText.FAIL)
         );
+    const questionFilePath = path.join(
+        __dirname,
+        "..",
+        "uploads",
+        "Exams",
+        "questions",
+        question.questionFile
+    );
+    const answerFilePath = path.join(
+        __dirname,
+        "..",
+        "uploads",
+        "Exams",
+        "answers",
+        question.answerFile
+    );
+    if (fs.existsSync(questionFilePath)) await fs.promises.unlink(questionFilePath);
+    if (fs.existsSync(answerFilePath)) await fs.promises.unlink(answerFilePath);
+
     return res.json({ status: httpStatusText.SUCCESS, data: question });
 });
 

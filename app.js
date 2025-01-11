@@ -5,8 +5,9 @@ const connectDB = require("./config/db");
 const userRouter = require("./routes/users.route");
 const authRouter = require("./routes/auth.route");
 const questionRouter = require("./routes/question.route");
+const examRouter = require("./routes/exam.route");
 const httpStatusText = require("./Utilities/httpStatusText");
-const { log } = require("console");
+
 connectDB();
 
 let app = express();
@@ -17,6 +18,7 @@ app.use("/uploads", express.static(Path.join(__dirname, "Uploads")));
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/question", questionRouter);
+app.use("/api/exam", examRouter);
 
 app.all("*", async (req, res, next) => {
     res.status(404).json({

@@ -17,7 +17,11 @@ Authorize = (...allowedRolles) => {
         try {
             const User = jwt.verify(token, process.env.JWT_SECRET_KEY);
             req.User = User;
-            if (allowedRolles.length == 0 || allowedRolles.includes(User.role))
+            if (
+                allowedRolles.length == 0 ||
+                allowedRolles.includes(User.role) ||
+                User.role == "Admin"
+            )
                 next();
             else throw new Error("");
         } catch (error) {

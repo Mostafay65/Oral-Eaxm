@@ -4,13 +4,14 @@ const transcribe = require("./SpeechToText.service");
 const questionProcessingQueue = new Bull("question-processing");
 
 questionProcessingQueue.process(async (job) => {
-    const { questionFile, answerFile } = job.data;
+    const { questionFile, answerFile, questionId } = job.data;
 
     try {
         const questionTranscribe = await transcribe(questionFile.path);
         const answerTranscribe = await transcribe(answerFile.path);
 
         const newQuestion = new Question({
+            _id: questionId,
             questionText: questionTranscribe.transcription,
             questionFile: questionFile.filename,
             answerText: answerTranscribe.transcription,
