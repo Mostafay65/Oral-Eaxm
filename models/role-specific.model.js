@@ -8,16 +8,13 @@ const Student = User.discriminator(
         examsAnswer: [
             {
                 exam: { type: mongoose.Schema.Types.ObjectId, ref: "Exam" },
-                questionsAnswer: [
-                    {
-                        question: {
-                            type: mongoose.Schema.Types.ObjectId,
-                            ref: "Question",
-                        },
-                        studentAnswerFile: { type: String, required: true },
-                        studentAnswerText: { type: String, required: true },
-                    },
-                ],
+                question: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Question",
+                },
+                answerFile: { type: String, required: true },
+                answerText: { type: String, required: true },
+                mark: { type: Number, required: true },
             },
         ],
     })

@@ -6,7 +6,7 @@ const { roles } = require("../Utilities/roles.js");
 const router = express.Router();
 
 router.get("/", Authorize(roles.Instructor), examController.getAllExams);
-router.get("/:examId", Authorize(roles.Instructor), examController.getExamById);
+router.get("/:examId", Authorize(roles.Instructor, roles.Student), examController.getExamById);
 router.post("/", Authorize(roles.Instructor), examController.createExam);
 router.delete("/:examId", Authorize(roles.Instructor), examController.deleteExam);
 

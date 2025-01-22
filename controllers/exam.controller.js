@@ -9,6 +9,7 @@ const questionMapper = require("../mappers/question.mapper");
 const questionModel = require("../models/question.model.js");
 const fs = require("fs");
 const path = require("path");
+const { roles } = require("../Utilities/roles.js");
 
 const getAllExams = axyncWrapper(async (req, res, next) => {
     const exams = await Exam.find(
@@ -18,6 +19,7 @@ const getAllExams = axyncWrapper(async (req, res, next) => {
         path: "instructor",
         select: "-password -__v -exams -role",
     });
+
     return res
         .status(200)
         .json({ status: httpStatusText.SUCCESS, data: { exams } });
@@ -26,10 +28,19 @@ const getAllExams = axyncWrapper(async (req, res, next) => {
 const getExamById = axyncWrapper(async (req, res, next) => {
     const examId = req.params.examId;
     const exam = await Exam.findById(examId, { __v: 0 })
-        .populate("questions")
+        .populate({
+            path: "questions",
+            select: `-__v ${
+                req.User.role === roles.Student ? "-answerFile -answerText" : ""
+            }`,
+        })
         .populate({
             path: "instructor",
             select: "-password -__v -exams -role",
+        })
+        .populate({
+            path: "students",
+            select: "-password -__v -examsAnswer -role",
         })
         .lean();
 
@@ -51,6 +62,7 @@ const getExamById = axyncWrapper(async (req, res, next) => {
 const createExam = axyncWrapper(async (req, res, next) => {
     const { questions } = req.body;
 
+    // rememer that some questions may be still processing so they are not yet saved in the database
     for (let questionId of questions) {
         const question = await Question.findById(questionId);
         if (!question) {
@@ -97,7 +109,6 @@ const deleteExam = axyncWrapper(async (req, res, next) => {
         );
     }
 
-
     // Delete all questions and their files
 
     for (let question of exam.questions) {
@@ -117,9 +128,11 @@ const deleteExam = axyncWrapper(async (req, res, next) => {
             "answers",
             question.answerFile
         );
-        
-        if (fs.existsSync(questionFilePath)) await fs.promises.unlink(questionFilePath);
-        if (fs.existsSync(answerFilePath)) await fs.promises.unlink(answerFilePath);
+
+        if (fs.existsSync(questionFilePath))
+            await fs.promises.unlink(questionFilePath);
+        if (fs.existsSync(answerFilePath))
+            await fs.promises.unlink(answerFilePath);
     }
     await questionModel.deleteMany({ _id: { $in: exam.questions } });
     await exam.deleteOne({ _id: examId });

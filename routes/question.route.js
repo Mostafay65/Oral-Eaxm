@@ -5,6 +5,8 @@ const path = require("path");
 const appError = require("../Utilities/appError");
 const { randomBytes } = require("crypto");
 const router = express.Router();
+const Authorize = require("../middleware/Authorize");
+const { roles } = require("../Utilities/roles.js");
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -32,12 +34,13 @@ router.get("/", questionController.getAllQuestions);
 router.get("/:questionId", questionController.getQuestionById);
 router.post(
     "/",
+    Authorize(roles.Instructor),
     Upload.fields([
         { name: "questionFile", maxCount: 1 },
         { name: "answerFile", maxCount: 1 },
     ]),
     questionController.createQuestion
 );
-router.delete("/:questionId", questionController.deleteQuestion);
+router.delete("/:questionId", Authorize(roles.Instructor), questionController.deleteQuestion);
 
 module.exports = router;

@@ -2,7 +2,7 @@ const appError = require("../Utilities/appError");
 const httpStatusText = require("../Utilities/httpStatusText");
 const jwt = require("jsonwebtoken");
 
-Authorize = (...allowedRolles) => {
+Authorize = (...allowedRoles) => {
     return (req, res, next) => {
         if (!req.headers.authorization) {
             return next(
@@ -18,8 +18,8 @@ Authorize = (...allowedRolles) => {
             const User = jwt.verify(token, process.env.JWT_SECRET_KEY);
             req.User = User;
             if (
-                allowedRolles.length == 0 ||
-                allowedRolles.includes(User.role) ||
+                allowedRoles.length == 0 ||
+                allowedRoles.includes(User.role) ||
                 User.role == "Admin"
             )
                 next();
