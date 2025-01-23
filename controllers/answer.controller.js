@@ -9,16 +9,11 @@ const Student = require("../models/role-specific.model").Student;
 const getStudentAnswer = asyncwrapper(async (req, res, next) => {
     const { studentId, examId } = req.body;
     const exam = await Exam.findById(examId).populate("questions");
-    if (!exam)
-        return next(new appError("Exam not found", 400, httpStatusText.FAIL));
+    if (!exam) return next(new appError("Exam not found", 400, httpStatusText.FAIL));
 
-    const student = await Student.findById(studentId).populate(
-        "examsAnswer.question"
-    );
+    const student = await Student.findById(studentId).populate("examsAnswer.question");
     if (!student)
-        return next(
-            new appError("student not found", 400, httpStatusText.FAIL)
-        );
+        return next(new appError("student not found", 400, httpStatusText.FAIL));
 
     const studentAnswers = student.examsAnswer.filter(
         (answer) => answer.exam.toString() === examId
@@ -27,10 +22,7 @@ const getStudentAnswer = asyncwrapper(async (req, res, next) => {
     // ?   ====>   exam.degree
     // studentGrade  ====>   cnt * 10
 
-    const studentDegree = studentAnswers.reduce(
-        (acc, answer) => acc + answer.mark,
-        0
-    );
+    const studentDegree = studentAnswers.reduce((acc, answer) => acc + answer.mark, 0);
 
     const result = {
         examId: exam.id,
@@ -47,6 +39,7 @@ const getStudentAnswer = asyncwrapper(async (req, res, next) => {
     for (let i = 0; i < studentAnswers.length; i++) {
         const studentAnswer = studentAnswers[i];
         result.answers.push({
+            id: studentAnswer._id,
             questionId: studentAnswer.question._id,
             questionFile: questionPath + studentAnswer.question.questionFile,
             questionText: studentAnswer.question.questionText,
@@ -72,11 +65,7 @@ const createAnswer = asyncwrapper(async (req, res) => {
 
     if (!req.file)
         return next(
-            new appError(
-                "Invalid answer file provided.",
-                400,
-                httpStatusText.FAIL
-            )
+            new appError("Invalid answer file provided.", 400, httpStatusText.FAIL)
         );
 
     // add the current student to the exam just ones
@@ -106,4 +95,44 @@ const createAnswer = asyncwrapper(async (req, res) => {
     });
 });
 
-module.exports = { createAnswer, getStudentAnswer };
+const updateAnswerMark = asyncwrapper(async (req, res, next) => {
+    const { answerId, studentId } = req.params;
+    const { mark } = req.body;
+
+    // Find the student and populate their exam answers
+    const studentDoc = await Student.findById(studentId).populate("examsAnswer");
+    if (!studentDoc) {
+        return next(new appError("Student not found", 404, httpStatusText.FAIL));
+    }
+
+    // Find the specific answer in student's examsAnswer array
+    const answer = studentDoc.examsAnswer.find(
+        (answer) => answer._id.toString() === answerId
+    );
+
+    if (!answer) {
+        return next(new appError("Answer not found", 404, httpStatusText.FAIL));
+    }
+
+    // Validate mark value
+    if (mark < 0 || mark > 10) {
+        return next(
+            new appError("Mark must be between 0 and 10", 400, httpStatusText.FAIL)
+        );
+    }
+
+    // Update the mark
+    answer.mark = mark;
+    await studentDoc.save();
+
+    return res.status(200).json({
+        status: httpStatusText.SUCCESS,
+        message: "Answer mark updated successfully",
+        data: {
+            answerId,
+            mark,
+        },
+    });
+});
+
+module.exports = { createAnswer, getStudentAnswer, updateAnswerMark };

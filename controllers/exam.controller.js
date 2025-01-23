@@ -6,23 +6,19 @@ const Question = require("../models/question.model.js");
 const User = require("../models/user.model.js");
 const Instructor = require("../models/role-specific.model.js").Instructor;
 const questionMapper = require("../mappers/question.mapper");
+const questionProcessingQueue = require("../services/questionProcessingQueue.service");
 const questionModel = require("../models/question.model.js");
 const fs = require("fs");
 const path = require("path");
 const { roles } = require("../Utilities/roles.js");
 
 const getAllExams = axyncWrapper(async (req, res, next) => {
-    const exams = await Exam.find(
-        { instructor: req.User.id },
-        { __v: 0 }
-    ).populate({
+    const exams = await Exam.find({ instructor: req.User.id }, { __v: 0 }).populate({
         path: "instructor",
         select: "-password -__v -exams -role",
     });
 
-    return res
-        .status(200)
-        .json({ status: httpStatusText.SUCCESS, data: { exams } });
+    return res.status(200).json({ status: httpStatusText.SUCCESS, data: { exams } });
 });
 
 const getExamById = axyncWrapper(async (req, res, next) => {
@@ -46,33 +42,42 @@ const getExamById = axyncWrapper(async (req, res, next) => {
 
     if (!exam) {
         return next(
-            new appError(
-                `Exam with id ${examId} not found`,
-                404,
-                httpStatusText.FAIL
-            )
+            new appError(`Exam with id ${examId} not found`, 404, httpStatusText.FAIL)
         );
     }
     exam.questions = exam.questions.map(questionMapper);
-    return res
-        .status(200)
-        .json({ status: httpStatusText.SUCCESS, data: { exam } });
+    return res.status(200).json({ status: httpStatusText.SUCCESS, data: { exam } });
 });
 
 const createExam = axyncWrapper(async (req, res, next) => {
     const { questions } = req.body;
 
-    // rememer that some questions may be still processing so they are not yet saved in the database
     for (let questionId of questions) {
         const question = await Question.findById(questionId);
+
         if (!question) {
-            return next(
-                new appError(
-                    `Question with id ${questionId} not found`,
-                    404,
-                    httpStatusText.FAIL
-                )
-            );
+            // Check question processing queue
+            const processingStatus = await questionProcessingQueue.getStatus(questionId);
+
+            if (!processingStatus) {
+                return next(
+                    new appError(
+                        `Question with id ${questionId} not found`,
+                        404,
+                        httpStatusText.FAIL
+                    )
+                );
+            }
+
+            if (processingStatus.status === "failed") {
+                return next(
+                    new appError(
+                        `Question with id ${questionId} processing failed. Please create the question again.`,
+                        400,
+                        httpStatusText.FAIL
+                    )
+                );
+            }
         }
     }
 
@@ -92,11 +97,7 @@ const deleteExam = axyncWrapper(async (req, res, next) => {
 
     if (!exam) {
         return next(
-            new appError(
-                `Exam with id ${examId} not found`,
-                404,
-                httpStatusText.FAIL
-            )
+            new appError(`Exam with id ${examId} not found`, 404, httpStatusText.FAIL)
         );
     }
     if (exam.instructor != req.User.id) {
@@ -129,10 +130,8 @@ const deleteExam = axyncWrapper(async (req, res, next) => {
             question.answerFile
         );
 
-        if (fs.existsSync(questionFilePath))
-            await fs.promises.unlink(questionFilePath);
-        if (fs.existsSync(answerFilePath))
-            await fs.promises.unlink(answerFilePath);
+        if (fs.existsSync(questionFilePath)) await fs.promises.unlink(questionFilePath);
+        if (fs.existsSync(answerFilePath)) await fs.promises.unlink(answerFilePath);
     }
     await questionModel.deleteMany({ _id: { $in: exam.questions } });
     await exam.deleteOne({ _id: examId });

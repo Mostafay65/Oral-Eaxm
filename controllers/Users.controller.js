@@ -19,12 +19,12 @@ const getAllInstructors = asyncWrapper(async (req, res, next) => {
 
 const getAllStudents = asyncWrapper(async (req, res, next) => {
     const Students = await Student.find({}, { __v: 0, password: 0 })
-        .populate({
-            path: "examsAnswer.examId",
-        })
-        .populate({
-            path: "examsAnswer.questionId",
-        });
+        // .populate({
+        //     path: "examsAnswer.exam",
+        // })
+        // .populate({
+        //     path: "examsAnswer.question",
+        // });
 
     return res.json({ status: httpStatusText.SUCCESS, data: { Students } });
 });

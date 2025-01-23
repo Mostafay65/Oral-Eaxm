@@ -20,8 +20,34 @@ questionProcessingQueue.process(async (job) => {
 
         await newQuestion.save();
     } catch (err) {
-        console.error("Error processing question:", err);
+        await job.moveToFailed({ message: err.message });
+        console.error("Error processing question:", err.message);
     }
 });
 
-module.exports = questionProcessingQueue;
+
+const add = async (data) => {
+    return await questionProcessingQueue.add(data);
+};
+
+const getStatus = async (questionId) => {
+    const jobs = await questionProcessingQueue.getJobs();
+    const job = jobs.find(
+        (job) => job.data.questionId === questionId
+    );
+
+    if (!job) return null;
+
+    return {
+        id: job.id,
+        status: await job.getState(),
+        progress: job.progress(),
+        data: job.data,
+        timestamp: job.timestamp,
+    };
+};
+
+module.exports = {
+    add,
+    getStatus,
+};

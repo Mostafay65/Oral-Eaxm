@@ -7,9 +7,7 @@ const bcrypt = require("bcrypt");
 
 const Register = asyncWrapper(async (req, res, next) => {
     if ((await User.findOne({ email: req.body.email })) != null) {
-        return next(
-            new appError("Email already exists", 400, httpStatusText.FAIL)
-        );
+        return next(new appError("Email already exists", 400, httpStatusText.FAIL));
     }
     const newUser = new User({
         ...req.body,
@@ -34,26 +32,13 @@ const Register = asyncWrapper(async (req, res, next) => {
 const Login = asyncWrapper(async (req, res, next) => {
     const { email, password } = req.body;
     if (!email || !password)
-        return next(
-            new appError(
-                "Email and Password are required",
-                400,
-                httpStatusText.FAIL
-            )
-        );
+        return next(new appError("Email and Password are required", 400, httpStatusText.FAIL));
 
     const user = await User.findOne({ email });
-    if (user == null)
-        return next(new appError("User not found", 404, httpStatusText.FAIL));
+    if (user == null) return next(new appError("User not found", 404, httpStatusText.FAIL));
 
     if (!(await bcrypt.compare(password, user.password)))
-        return next(
-            new appError(
-                "Email or password are incorrect",
-                400,
-                httpStatusText.FAIL
-            )
-        );
+        return next(new appError("Email or password are incorrect", 400, httpStatusText.FAIL));
 
     // generate JWT token
     const token = generateJWT({ email, id: user._id, role: user.role });

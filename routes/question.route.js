@@ -25,7 +25,13 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
     if (file.mimetype === "audio/mpeg") cb(null, true);
-    else cb(new appError(`File '${file.originalname}' not allowed, Only MP3 files are allowed`), false);
+    else
+        cb(
+            new appError(
+                `File '${file.originalname}' not allowed, Only MP3 files are allowed`
+            ),
+            false
+        );
 };
 
 const Upload = multer({ storage, fileFilter });
@@ -41,6 +47,13 @@ router.post(
     ]),
     questionController.createQuestion
 );
-router.delete("/:questionId", Authorize(roles.Instructor), questionController.deleteQuestion);
-
+router.delete(
+    "/:questionId",
+    Authorize(roles.Instructor),
+    questionController.deleteQuestion
+);
+router.get(
+    "/processing-status/:questionId",
+    questionController.getQuestionProcessingStatus
+);
 module.exports = router;

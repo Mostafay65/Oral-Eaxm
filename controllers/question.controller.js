@@ -36,6 +36,7 @@ const createQuestion = asyncWrapper(async (req, res, next) => {
     }
 
     const questionId = new mongoose.Types.ObjectId();
+    
     await questionProcessingQueue.add({
         questionId: questionId,
         questionFile: req.files.questionFile[0],
@@ -80,9 +81,27 @@ const deleteQuestion = asyncWrapper(async (req, res, next) => {
     return res.json({ status: httpStatusText.SUCCESS, data: question });
 });
 
+const getQuestionProcessingStatus = asyncWrapper(async (req, res, next) => {
+    const { questionId } = req.params;
+    
+    const status = await questionProcessingQueue.getStatus(questionId);
+    
+    if (!status) {
+        return next(
+            new appError("Question processing job not found", 404, httpStatusText.FAIL)
+        );
+    }
+
+    return res.json({
+        status: httpStatusText.SUCCESS,
+        data: status
+    });
+});
+
 module.exports = {
     getAllQuestions,
     getQuestionById,
     createQuestion,
     deleteQuestion,
+    getQuestionProcessingStatus  // Add this new export
 };

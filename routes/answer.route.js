@@ -34,5 +34,10 @@ router.post(
 );
 
 router.get("/student", answerController.getStudentAnswer);
+router.patch(
+    "/:answerId/student/:studentId",
+    Authorize(roles.Instructor),
+    answerController.updateAnswerMark
+);
 
 module.exports = router;
