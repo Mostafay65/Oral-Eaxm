@@ -59,17 +59,7 @@ const createExam = axyncWrapper(async (req, res, next) => {
             // Check question processing queue
             const processingStatus = await questionProcessingQueue.getStatus(questionId);
 
-            if (!processingStatus) {
-                return next(
-                    new appError(
-                        `Question with id ${questionId} not found`,
-                        404,
-                        httpStatusText.FAIL
-                    )
-                );
-            }
-
-            if (processingStatus.status === "failed") {
+            if (processingStatus && processingStatus.status === "failed") {
                 return next(
                     new appError(
                         `Question with id ${questionId} processing failed. Please create the question again.`,
@@ -77,7 +67,22 @@ const createExam = axyncWrapper(async (req, res, next) => {
                         httpStatusText.FAIL
                     )
                 );
+            } else if (
+                processingStatus &&
+                ["waiting", "active", "completed", "delayed", "paused"].includes(
+                    processingStatus.status
+                )
+            ) {
+                continue;
             }
+
+            return next(
+                new appError(
+                    `Question with id ${questionId} not found`,
+                    404,
+                    httpStatusText.FAIL
+                )
+            );
         }
     }
 
@@ -134,6 +139,11 @@ const deleteExam = axyncWrapper(async (req, res, next) => {
         if (fs.existsSync(answerFilePath)) await fs.promises.unlink(answerFilePath);
     }
     await questionModel.deleteMany({ _id: { $in: exam.questions } });
+
+    const instructor = await Instructor.findById(exam.instructor);
+    instructor.exams = instructor.exams.filter((id) => id.toString() !== examId);
+    await instructor.save();
+
     await exam.deleteOne({ _id: examId });
 
     return res.status(200).json({ status: "success", data: null });

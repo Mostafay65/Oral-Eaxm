@@ -11,7 +11,9 @@ const getStudentAnswer = asyncwrapper(async (req, res, next) => {
     const exam = await Exam.findById(examId).populate("questions");
     if (!exam) return next(new appError("Exam not found", 400, httpStatusText.FAIL));
 
-    const student = await Student.findById(studentId).populate("examsAnswer.question");
+    const student = await Student.findById(studentId)
+        .populate("examsAnswer.question")
+        .populate("completedExams");
     if (!student)
         return next(new appError("student not found", 400, httpStatusText.FAIL));
 
@@ -19,17 +21,14 @@ const getStudentAnswer = asyncwrapper(async (req, res, next) => {
         (answer) => answer.exam.toString() === examId
     );
 
-    // ?   ====>   exam.degree
-    // studentGrade  ====>   cnt * 10
-
-    const studentDegree = studentAnswers.reduce((acc, answer) => acc + answer.mark, 0);
-
     const result = {
         examId: exam.id,
         studentId: student.id,
-        title: exam.name,
+        title: exam.title,
         examDegree: exam.degree,
-        studentDegree: (exam.degree * studentDegree) / (studentAnswers.length * 10),
+        totalMark:
+            student.completedExams?.find((exam) => exam.exam.toString() === examId)
+                ?.totalMark || 0,
         answers: [],
     };
     const questionPath = process.env.HOST + "/uploads/Exams/questions/";
@@ -53,7 +52,7 @@ const getStudentAnswer = asyncwrapper(async (req, res, next) => {
     return res.status(200).json({ status: "success", data: result });
 });
 
-const createAnswer = asyncwrapper(async (req, res) => {
+const createAnswer = asyncwrapper(async (req, res, next) => {
     const { examId, questionId } = req.body;
     const student = req.User;
 
@@ -67,6 +66,16 @@ const createAnswer = asyncwrapper(async (req, res) => {
         return next(
             new appError("Invalid answer file provided.", 400, httpStatusText.FAIL)
         );
+
+    if (Date.now() < new Date(exam.startDate)) {
+        return next(
+            new appError("this exam hasn't started yet", 400, httpStatusText.FAIL)
+        );
+    }
+    if (Date.now() > new Date(exam.endDate).getTime() + 60000) {
+        // allowing one minute after exam end time
+        return next(new appError("Sorry this exam has ended", 400, httpStatusText.FAIL));
+    }
 
     // add the current student to the exam just ones
     if (exam.students.indexOf(student.id) === -1) {
