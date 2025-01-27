@@ -128,3 +128,22 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+
+# Ignore uploads directory but keep the folder structure
+uploads/*
+!uploads/Exams/
+!uploads/answers/
+
+uploads/Exams/*
+!uploads/Exams/questions/
+!uploads/Exams/answers/
+
+uploads/Exams/questions/*
+uploads/Exams/answers/*
+uploads/answers/*
+
+# Keep .gitkeep files to maintain folder structure
+!uploads/Exams/questions/.gitkeep
+!uploads/Exams/answers/.gitkeep
+!uploads/answers/.gitkeep

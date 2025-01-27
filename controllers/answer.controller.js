@@ -54,13 +54,17 @@ const getStudentAnswer = asyncwrapper(async (req, res, next) => {
 
 const createAnswer = asyncwrapper(async (req, res, next) => {
     const { examId, questionId } = req.body;
-    const student = req.User;
+    // Get the populated student data
+    const student = await Student.findById(req.User.id);
+    if (!student) {
+        return next(new appError("Student not found", 404, httpStatusText.FAIL));
+    }
 
     const exam = await Exam.findById(examId);
     if (!exam) return res.status(404).json({ message: "Exam not found" });
 
-    const qstion = await Question.findById(questionId);
-    if (!qstion) return res.status(404).json({ message: "Question not found" });
+    const question = await Question.findById(questionId);
+    if (!question) return res.status(404).json({ message: "Question not found" });
 
     if (!req.file)
         return next(
@@ -81,7 +85,12 @@ const createAnswer = asyncwrapper(async (req, res, next) => {
     if (exam.students.indexOf(student.id) === -1) {
         exam.students.push(student.id);
         exam.save();
-    } else {
+    }
+
+    const answer = student.examsAnswer.find(
+        (answer) => answer.question.toString() === questionId
+    );
+    if (answer) {
         return next(
             new appError(
                 "You have already answered this question",
@@ -109,7 +118,7 @@ const updateAnswerMark = asyncwrapper(async (req, res, next) => {
     const { mark } = req.body;
 
     // Find the student and populate their exam answers
-    const studentDoc = await Student.findById(studentId).populate("examsAnswer");
+    const studentDoc = await Student.findById(studentId).populate("completedExams.exam");
     if (!studentDoc) {
         return next(new appError("Student not found", 404, httpStatusText.FAIL));
     }
@@ -132,6 +141,29 @@ const updateAnswerMark = asyncwrapper(async (req, res, next) => {
 
     // Update the mark
     answer.mark = mark;
+
+    const exam = await Exam.findById(answer.exam);
+    // update the total mark of the student
+    const examAnswers = studentDoc.examsAnswer.filter(
+        (ans) => ans.exam.toString() === answer.exam.toString()
+    );
+    const totalMark = examAnswers.reduce((sum, ans) => sum + (Number(ans.mark) || 0), 0);
+
+    // Find or create completedExam entry
+    const completedExamIndex = studentDoc.completedExams.findIndex(
+        (exam) => exam.exam._id.toString() === answer.exam.toString()
+    );
+
+    const finalGrade = (exam.degree * totalMark) / (exam.questions.length * 10);
+
+    if (completedExamIndex !== -1) {
+        studentDoc.completedExams[completedExamIndex].totalMark = finalGrade;
+    } else {
+        studentDoc.completedExams.push({
+            exam: answer.exam,
+            totalMark: finalGrade,
+        });
+    }
     await studentDoc.save();
 
     return res.status(200).json({

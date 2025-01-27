@@ -91,6 +91,22 @@ class EmailService {
         `;
         return this.sendEmail(userEmail, subject, text, html);
     }
+
+    // notify students with their exam feedback
+    async sendFeedbackEmail(userEmail, userName, examDetails, feedback) {
+        const subject = "Ipass Oral Exam Feedback";
+        const text = `Hello ${userName}, here's your feedback for ${examDetails.title} exam`;
+        const html = `
+            <h1>Oral Exam Feedback</h1>
+            <p>Dear ${userName},</p>
+            <p>Here's your feedback for ${examDetails.title} exam:</p>
+            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                ${feedback}
+            </div>
+            <p>Best regards,<br>The Ipass Oral Exam Team</p>
+        `;
+        return this.sendEmail(userEmail, subject, text, html);
+    }
 }
 
 module.exports = new EmailService();

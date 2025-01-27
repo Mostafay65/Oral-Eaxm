@@ -1,0 +1,3 @@
+touch uploads/Exams/questions/.gitkeep
+touch uploads/Exams/answers/.gitkeep
+touch uploads/answers/.gitkeep

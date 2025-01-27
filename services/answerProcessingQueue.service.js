@@ -1,7 +1,7 @@
 const Bull = require("bull");
 const Student = require("../models/role-specific.model").Student;
 const transcribe = require("./SpeechToText.service");
-const { gradeQuestion } = require("./grading.service");
+const GeminiAPI = require("./geminiAPI.service");
 const Question = require("../models/question.model");
 const Exam = require("../models/exam.model");
 const emailService = require("./email.service");
@@ -14,7 +14,7 @@ answerProcessingQueue.process(async (job) => {
     try {
         const answerTranscribe = await transcribe(answerFile.path);
         const question = await Question.findById(questionId);
-        const mark = await gradeQuestion(
+        const mark = await GeminiAPI.gradeQuestion(
             question.questionText,
             question.answerText,
             answerTranscribe.transcription
@@ -42,17 +42,17 @@ answerProcessingQueue.process(async (job) => {
         );
 
         if (studentAnswers.length + 1 === exam.questions.length) {
-            // +1 for the current answer
-            // Calculate total grade
-            const totalMark = studentAnswers.reduce(
-                (acc, answer) => acc + answer.mark,
-                mark
-            );
-
-            // ?   ====>   exam.degree
-            // studentGrade  ====>   cnt * 10
+            let totalMark = Number(mark);
+            for (let i = 0; i < studentAnswers.length; i++) {
+                totalMark += Number(studentAnswers[i].mark);
+            }
 
             const finalGrade = (exam.degree * totalMark) / (exam.questions.length * 10);
+            
+            // Ensure finalGrade is a valid number
+            if (isNaN(finalGrade)) {
+                throw new Error("Invalid grade calculation");
+            }
 
             // Update completed exam status
             await Student.findByIdAndUpdate(studentId, {

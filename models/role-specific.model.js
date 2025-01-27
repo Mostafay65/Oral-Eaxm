@@ -21,9 +21,10 @@ const Student = User.discriminator(
             {
                 exam: { type: mongoose.Schema.Types.ObjectId, ref: "Exam" },
                 totalMark: { type: Number },
-                isCompleted: { type: Boolean, default: false }
-            }
-        ]
+                isCompleted: { type: Boolean, default: false },
+                feedback: { type: String, default: "N/A" },
+            },
+        ],
     })
 );
 
